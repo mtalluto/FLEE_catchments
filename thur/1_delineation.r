@@ -66,8 +66,8 @@ plot(log(accum), xaxt='n', yaxt='n')
 # then adjust
 #############
 
-writeOGR(outletPoint_approx, file.path(dir, "tmp"), "outlet")
-thresh <- 0.995
+writeOGR(SpatialPointsDataFrame(outletPoint_approx, data=data.frame(name="thur")), file.path(dir, "tmp"), "outlet", "ESRI Shapefile")
+thresh <- 0.99
 streamChannel <- extractStream(dem = 'filledDEM', gs = gs, accumulation = 'accum', 
 	qthresh = thresh, type='both')
 writeOGR(streamChannel$vector, file.path(dir, "tmp"), paste0("stream", thresh*100), 
@@ -81,63 +81,23 @@ catchment <- catchment(outletPointSnap, drainage = 'drainage', gs = gs, areas=FA
 catchment <- writeRaster(catchment, file=file.path(dir, "catchment.tif"), options = tifInt)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #############
-# Find an outlet point (by eye-in QGIS) and delineate catchment
+# Crop the delineated watershed to the catchment
 #############
-writeOGR(streamChannel$vector, file.path(dir, "tmp"), paste0("stream", thresh*100), 
-	"ESRI Shapefile")
-# the original ybbs one was fine
-yb <- coordinates(outlets)[outlets$name == 'ybbs']
-ka <- c(4749353, 2825060)
-outlets <- data.frame(x = c(yb[1], ka[1]), y = c(yb[2], ka[2]), name = c('ybbs', 'kamp'))
-coordinates(outlets) <- c(1,2)
-proj4string(outlets) <- proj4string(streamChannel$vector)
-outletsSnap <- snapToStream(outlets, streamChannel$raster, buff= 400)
-catchment <- catchment(outletsSnap, drainage = 'drainage', gs = gs, areas=FALSE)
-lapply(1:nlayers(catchment), function(x) writeRaster(catchment[[x]], 
-	file=paste0(dir, "/", outlets$name[x], "_catchment.tif"), options = tifInt))
+stream <- cropToCatchment(outletPointSnap, streamChannel$raster, streamChannel$vector, 'drainage', gs = gs) 
+plot(dem, col=gray.colors(50))
+plot(catchment, add=TRUE, col="#aa000055")
+plot(stream$vector, add=TRUE, col='blue')
 
-
-
-#############
-# Crop the delineated watershed to the catchments
-#############
-ybbsStream <- cropToCatchment(outletsSnap[1,], streamChannel$raster, streamChannel$vector, 
-      'drainage', gs = gs) 
-kampStream <- cropToCatchment(outletsSnap[2,], streamChannel$raster, streamChannel$vector, 'drainage', gs = gs) 
-writeOGR(ybbsStream$vector, shpdir, "ybbs_stream", "ESRI Shapefile")
-writeOGR(kampStream$vector, shpdir, "kamp_stream", "ESRI Shapefile")
-writeRaster(ybbsStream$raster, file.path(dir, "ybbs_stream.tif"), options = tifInt)
-writeRaster(kampStream$raster, file.path(dir, "kamp_stream.tif"), options = tifInt)
-
+writeOGR(stream$vector, shpdir, "thur_stream", "ESRI Shapefile")
+writeRaster(stream$raster, file.path(dir, "thur_stream.tif"), options = tifInt)
 
 # split coordinates for catchment area by reach
-pixvals <- values(ybbsStream$raster)
-coords <- coordinates(ybbsStream$raster)
+pixvals <- values(stream$raster)
+coords <- coordinates(stream$raster)
 df <- cbind(pixvals, coords)
 df <- df[complete.cases(df),]
 caPts <- by(df, df[,1], function(x) x[,2:3])
-saveRDS(caPts, file.path(dir, "tmp", "y_caPoints_byReach.rds"))
+saveRDS(caPts, file.path(dir, "tmp", "caPoints_byReach.rds"))
 
-pixvals <- values(kampStream$raster)
-coords <- coordinates(kampStream$raster)
-df <- cbind(pixvals, coords)
-df <- df[complete.cases(df),]
-caPts <- by(df, df[,1], function(x) x[,2:3])
-saveRDS(caPts, file.path(dir, "tmp", "k_caPoints_byReach.rds"))
 
