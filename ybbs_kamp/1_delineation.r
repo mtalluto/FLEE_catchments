@@ -1,8 +1,10 @@
 library(data.table)
-library(rgrass7)
-library(sp)
-library(WatershedTools)
+library(sf)
 library(raster)
+library(rgrass7)
+library(WatershedTools)
+
+library(sp)
 library(rgdal)
 
 #### Think about knitr for this
@@ -21,7 +23,11 @@ tifFloat <- c("COMPRESS=LZW", "PREDICTOR=3")
 # use this if drainAccum fails with an error about stars
 tryCatch(rgrass7::use_sp(), error = function(e) warning(e))
 
+# grab metadata for the most recent version
 metadat <- fread("catchment_list.csv")[catchment == "ybbs_kamp"]
+metadat <- metadat[which.max(order(semver::parse_version(metadat$version)))]
+# changed dir because of reasons
+metadat$dir <- "/Volumes/Data/catchments"
 dir <- file.path(metadat$dir, metadat$catchment, metadat$version)
 shpdir <- file.path(dir, "shape")
 shareDir <- metadat$dir
@@ -29,15 +35,12 @@ shareDir <- metadat$dir
 dir.create(dir, recursive=TRUE, showWarnings = FALSE)
 dir.create(shpdir, showWarnings = FALSE)
 
-
-outlets <- data.frame(x = c(15.102422, 15.797278), y = c(48.170074, 48.383946), 
+ykSites <- fread("~/work/projects/metabolismDB/data_raw/fall2019_expeditions/ybbskamp/Kamp_Ybbs_coordinates.csv")
+outlets <- data.frame(x = c(4690393, 4704445), y = c(2756269, 2847440), 
 	name = c("ybbs", "kamp"))
-coordinates(outlets) <- 1:2
-proj4string(outlets) <- CRS("+init=epsg:4326")
-outlets <- spTransform(outlets, CRS("+init=epsg:3035"))
-coordinates(outlets)
-dir.create(file.path(dir, "tmp"), showWarnings=FALSE)
-writeOGR(outlets, file.path(dir, "tmp"), "yk_outlets", "ESRI Shapefile")
+outlets <- st_as_sf(outlets, coords=c('x','y'), crs=3035)
+st_write(outlets, dsn="~/Desktop/ykoutlets", layer="ykoutlets", driver="ESRI Shapefile")
+
 
 #############
 # Grass setup
@@ -77,7 +80,7 @@ accum <- GSGetRaster('accum', gs, file = file.path(dir, "accumulation.tif"))
 plot(drain, col=rainbow(12), xaxt='n', yaxt='n')
 plot(log(accum), xaxt='n', yaxt='n')
 
-thresh <- 0.995
+thresh <- 0.992
 streamChannel <- extractStream(dem = 'filledDEM', gs = gs, accumulation = 'accum', 
 	qthresh = thresh, type='both')
 
