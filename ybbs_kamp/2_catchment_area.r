@@ -14,7 +14,7 @@ if(!netwk %in% c('y', 'k'))
 
 metadat <- fread("catchment_list.csv")[catchment == "ybbs_kamp"]
 # shareDir <- file.path(metadat$dir, metadat$catchment, metadat$version)
-shareDir <- "~/work/projects/catchments_backup_2020.02.10/ybbs_kamp/1.0.0"
+shareDir <- "/Volumes/Data/catchments/ybbs_kamp/1.1.0"
 outDir <- file.path(shareDir, "tmp", "ca", netwk)
 dir.create(outDir, showWarnings=FALSE)
 # scratchDir <- file.path(shareDir, "tmp")

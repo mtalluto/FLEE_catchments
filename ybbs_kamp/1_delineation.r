@@ -80,7 +80,7 @@ accum <- GSGetRaster('accum', gs, file = file.path(dir, "accumulation.tif"))
 plot(drain, col=rainbow(12), xaxt='n', yaxt='n')
 plot(log(accum), xaxt='n', yaxt='n')
 
-thresh <- 0.992
+thresh <- 0.986
 streamChannel <- extractStream(dem = 'filledDEM', gs = gs, accumulation = 'accum', 
 	qthresh = thresh, type='both')
 
@@ -88,15 +88,10 @@ streamChannel <- extractStream(dem = 'filledDEM', gs = gs, accumulation = 'accum
 #############
 # Find an outlet point (by eye-in QGIS) and delineate catchment
 #############
-writeOGR(streamChannel$vector, file.path(dir, "tmp"), paste0("stream", thresh*100), 
-	"ESRI Shapefile")
-# the original ybbs one was fine
-yb <- coordinates(outlets)[outlets$name == 'ybbs']
-ka <- c(4749353, 2825060)
-outlets <- data.frame(x = c(yb[1], ka[1]), y = c(yb[2], ka[2]), name = c('ybbs', 'kamp'))
-coordinates(outlets) <- c(1,2)
-proj4string(outlets) <- proj4string(streamChannel$vector)
-outletsSnap <- snapToStream(outlets, streamChannel$raster, buff= 400)
+st_write(st_as_sf(streamChannel$vector), dsn=file.path(dir, "tmp", thresh), layer=paste0("stream", thresh*100), 
+	driver="ESRI Shapefile")
+
+outletsSnap <- snapToStream(as(outlets, "Spatial"), streamChannel$raster, buff= 400)
 catchment <- catchment(outletsSnap, drainage = 'drainage', gs = gs, areas=FALSE)
 lapply(1:nlayers(catchment), function(x) writeRaster(catchment[[x]], 
 	file=paste0(dir, "/", outlets$name[x], "_catchment.tif"), options = tifInt))
