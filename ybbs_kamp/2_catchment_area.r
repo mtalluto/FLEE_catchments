@@ -1,6 +1,6 @@
-suppressPackageStartupMessages(library(WatershedTools, quietly=TRUE))
-suppressPackageStartupMessages(library(raster, quietly=TRUE))
-suppressPackageStartupMessages(library(data.table, quietly=TRUE))
+suppressPackageStartupMessages(suppressWarnings(library(WatershedTools, quietly=TRUE)))
+suppressPackageStartupMessages(suppressWarnings(library(raster, quietly=TRUE)))
+suppressPackageStartupMessages(suppressWarnings(library(data.table, quietly=TRUE)))
 args <- commandArgs(trailingOnly = TRUE)
 
 ## local variables/storage locations
@@ -12,10 +12,14 @@ netwk <- args[1]
 if(!netwk %in% c('y', 'k'))
 	stop("first command line arg must be y or k")
 
-metadat <- fread("catchment_list.csv")[catchment == "ybbs_kamp"]
-# shareDir <- file.path(metadat$dir, metadat$catchment, metadat$version)
-shareDir <- "/Volumes/Data/catchments/ybbs_kamp/1.1.0"
-outDir <- file.path(shareDir, "tmp", "ca", netwk)
+
+if(netwk == 'y') {
+	shareDir <- "~/work/projects/catchments/ybbs/1.2.0"
+} else {
+	shareDir <- "~/work/projects/catchments/kamp/1.2.0"
+}
+
+outDir <- file.path(shareDir, "tmp", "ca")
 dir.create(outDir, showWarnings=FALSE)
 # scratchDir <- file.path(shareDir, "tmp")
 scratchDir <- tempdir()
