@@ -1,6 +1,6 @@
-suppressPackageStartupMessages(library(WatershedTools, quietly=TRUE))
-suppressPackageStartupMessages(library(raster, quietly=TRUE))
-suppressPackageStartupMessages(library(data.table, quietly=TRUE))
+suppressWarnings(suppressPackageStartupMessages(library(WatershedTools, quietly=TRUE)))
+suppressWarnings(suppressPackageStartupMessages(library(raster, quietly=TRUE)))
+suppressWarnings(suppressPackageStartupMessages(library(data.table, quietly=TRUE)))
 args <- commandArgs(trailingOnly = TRUE)
 
 ## local variables/storage locations
@@ -10,9 +10,8 @@ args <- commandArgs(trailingOnly = TRUE)
 
 metadat <- fread("catchment_list.csv")[catchment == "thur"]
 # shareDir <- file.path(metadat$dir, metadat$catchment, metadat$version)
-shareDir <- "~/catchments_backup_20190131/thur/1.0.0"
+shareDir <- "~/work/projects/catchments/thur/1.1.0"
 outDir <- file.path(shareDir, "tmp", "ca")
-# scratchDir <- file.path(shareDir, "tmp")
 scratchDir <- tempdir()
 # scratchDir <- file.path(shareDir, "tmp")
 # dir.create(scratchDir, showWarnings=FALSE)
@@ -45,7 +44,7 @@ if(jobNum == 0) {
 		options = c("COMPRESS=LZW", "PREDICTOR=3"))
 } else if(jobNum <= max_jobs) {
 	logfile <- paste0("~/Dropbox/catchments/log_t_", jobNum, ".txt")
-	gisbase <- WatershedTools:::getGISBase()
+	suppressWarnings(gisbase <- WatershedTools:::getGISBase())
 	tryCatch(rgrass7::use_sp(), error = function(e) warning(e))
 	Sys.setenv(LOCATION_NAME='NSmetabolism')
 	gs <- GrassSession(layer = drain, gisBase = gisbase, layerName = "drainage", 
