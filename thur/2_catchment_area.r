@@ -10,7 +10,7 @@ args <- commandArgs(trailingOnly = TRUE)
 
 metadat <- fread("catchment_list.csv")[catchment == "thur"]
 # shareDir <- file.path(metadat$dir, metadat$catchment, metadat$version)
-shareDir <- "~/work/projects/catchments/thur/1.1.0"
+shareDir <- "~/work/projects/catchments/thur/1.2.0"
 outDir <- file.path(shareDir, "tmp", "ca")
 scratchDir <- tempdir()
 # scratchDir <- file.path(shareDir, "tmp")

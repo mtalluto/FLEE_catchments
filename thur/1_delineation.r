@@ -16,13 +16,14 @@ tifFloat <- c("COMPRESS=LZW", "PREDICTOR=3")
 tryCatch(rgrass7::use_sp(), error = function(e) warning(e))
 
 metadat <- fread("catchment_list.csv")[catchment == "thur"]
+
 dir <- file.path(metadat$dir, metadat$catchment, metadat$version)
 shpdir <- file.path(dir, "shape")
 shareDir <- metadat$dir
-
+tmpdir <- file.path(dir, "tmp")
 dir.create(dir, recursive=TRUE, showWarnings = FALSE)
 dir.create(shpdir, showWarnings = FALSE)
-
+dir.create(tmpdir, showWarnings = FALSE)
 
 #############
 # Grass setup
@@ -33,8 +34,9 @@ dir.create(shpdir, showWarnings = FALSE)
 gisbase <- WatershedTools:::getGISBase()
 # used this older DEM of unknown origin, because the copernicus DEM wasn't working for some reason
 dem <- raster(file.path(shareDir, "dem", "thur_25m", "thur_dem_3035.tif"))
+dem <- crop(dem, extent(4180925, 4313486, 2654576, 2733574))
 plot(dem)
-outletPoint_approx <- SpatialPoints(matrix(c(4218000, 2720800), nrow=1), 
+outletPoint_approx <- SpatialPoints(matrix(c(4263096, 2708975 ), nrow=1), 
 	proj4string = CRS(proj4string(dem)))
 plot(outletPoint_approx, add=TRUE)
 gs <- GrassSession(dem, gisbase, layerName = 'dem')
@@ -44,17 +46,25 @@ gs <- GrassSession(dem, gisbase, layerName = 'dem')
 #############
 # Fill the DEM
 #############
-gs <- fillDEM("dem", gs = gs, filledDEM = 'filledDEM', probs = 'probs')
-demFilled <- GSGetRaster('filledDEM', gs)
-demFilled <- writeRaster(demFilled, file.path(dir, "filled_dem.tif"), 
+# gs <- fillDEM("dem", gs = gs, filledDEM = 'filledDEM', probs = 'probs')
+# demFilled <- GSGetRaster('filledDEM', gs)
+demFilled <- writeRaster(demFilled, file.path(dir, "filled_dem.tif"),
 	options = tifFloat)
+
+demFilled <- raster(file.path(dir, "..", "1.1.0", "filled_dem.tif"))
+gs <- GSAddRaster(demFilled, "filledDEM", gs)
 
 #############
 # Compute drainage direction/flow accumulation
 #############
-gs <- drainageAccumulation('filledDEM', gs = gs, accumulation = 'accum', drainage = 'drainage')
-drain <- GSGetRaster('drainage', gs, file = file.path(dir, "drainage.tif")) 
-accum <- GSGetRaster('accum', gs, file = file.path(dir, "accumulation.tif"))
+# gs <- drainageAccumulation('filledDEM', gs = gs, accumulation = 'accum', drainage = 'drainage')
+# drain <- GSGetRaster('drainage', gs, file = file.path(dir, "drainage.tif")) 
+# accum <- GSGetRaster('accum', gs, file = file.path(dir, "accumulation.tif"))
+
+drain <- raster(file.path(dir, "..", "1.1.0", "drainage.tif"))
+accum <- raster(file.path(dir, "..", "1.1.0", "accumulation.tif"))
+gs <- GSAddRaster(drain, "drainage", gs)
+gs <- GSAddRaster(accum, "accum", gs)
 
 plot(drain, col=rainbow(12), xaxt='n', yaxt='n')
 plot(log(accum), xaxt='n', yaxt='n')
@@ -67,7 +77,7 @@ plot(log(accum), xaxt='n', yaxt='n')
 #############
 
 writeOGR(SpatialPointsDataFrame(outletPoint_approx, data=data.frame(name="thur")), file.path(dir, "tmp"), "outlet", "ESRI Shapefile")
-thresh <- 0.99
+thresh <- 0.95
 streamChannel <- extractStream(dem = 'filledDEM', gs = gs, accumulation = 'accum', 
 	qthresh = thresh, type='both')
 writeOGR(streamChannel$vector, file.path(dir, "tmp"), paste0("stream", thresh*100), 
