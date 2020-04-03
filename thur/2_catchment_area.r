@@ -15,7 +15,7 @@ outDir <- file.path(shareDir, "tmp", "ca")
 scratchDir <- tempdir()
 # scratchDir <- file.path(shareDir, "tmp")
 # dir.create(scratchDir, showWarnings=FALSE)
-
+dir.create(outDir, showWarnings = 'FALSE')
 caPoints <- readRDS(file.path(shareDir, "tmp", "caPoints_byReach.rds"))
 max_jobs <- 60
 cutoffs <- floor(seq(1, length(caPoints), length.out=max_jobs+1))
