@@ -1,7 +1,5 @@
 catchment,dir,date,version
-vjosa,/Volumes/share/catchments,2020-01-30,1.0.0
-ybbs_kamp,/Volumes/share/catchments,2020-01-31,1.0.0
-thur,/Volumes/Data/catchments,2020-04-03,1.2.0
-ybbs_kamp,/Volumes/share/catchments,2020-03-27,1.1.0
-ybbs,~/work/projects/catchments,2020-03-28,1.2.0
-kamp,~/work/projects/catchments,2020-03-28,1.2.0
+vjosa,/Volumes/Data/catchments,2020-05-11,1.1.0
+thur,/Volumes/Data/catchments,2020-05-12,1.3.0
+ybbs,/Volumes/Data/catchments,2020-05-12,1.3.0
+kamp,/Volumes/Data/catchments,2020-05-12,1.3.0

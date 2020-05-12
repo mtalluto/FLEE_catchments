@@ -21,9 +21,6 @@ drain <- raster(file.path(shareDir, "drainage.tif"))
 accum <- raster(file.path(shareDir, "accumulation.tif"))
 elev <- raster(file.path(shareDir, "filled_dem.tif"))
 stream <- raster(file.path(shareDir, "ybbs_stream.tif"))
-slope <- terrain(elev, unit = 'degrees')
-# convert from degrees to meters rise per meter displacement
-slope <- tan(slope * pi/180)
 catchmentAreas <- raster(file.path(shareDir, "ybbs_catchment_area.tif"))
 
 
@@ -50,7 +47,6 @@ plot(log(caDF$area), log(val), xlab="log(Catchment Area)", ylab="log(discharge)"
 points(log(qSites$A), log(qSites$Q), pch=16, cex=0.7, col='blue')
 
 
-slope <- crop(slope, q)
 dat = data.table(x = coordinates(q)[,1], y = coordinates(q)[,2], q = values(q))
 dat = dat[complete.cases(dat)]
 geom <- hydraulic_geometry(dat$q)
@@ -58,8 +54,6 @@ coordinates(geom) <- dat[,c('x', 'y')]
 gridded(geom) <- TRUE
 geom <- stack(geom)
 proj4string(geom) <- proj4string(catchmentAreas)
-geom <- stack(geom, slope)
-names(geom)[nlayers(geom)] <- "slope"
 
 gdir = file.path(shareDir, "geometry_YbbsFall2019")
 dir.create(gdir, showWarnings = FALSE)
@@ -84,6 +78,7 @@ compareRaster(stream, drain, elev, accum, catchmentAreas, geom)
 ybbsWS = Watershed(stream = stream, drainage = drain, elevation = elev, 
 		accumulation = accum, catchmentArea = catchmentAreas, 
 		otherLayers = geom)
+ybbsWS$data$slope = wsSlope(ybbsWS)
 saveRDS(ybbsWS, file.path(shareDir, "watershed_YbbsFall2019.rds"))
 
 
@@ -101,9 +96,6 @@ drain <- raster(file.path(shareDir, "drainage.tif"))
 accum <- raster(file.path(shareDir, "accumulation.tif"))
 elev <- raster(file.path(shareDir, "filled_dem.tif"))
 stream <- raster(file.path(shareDir, "kamp_stream.tif"))
-slope <- terrain(elev, unit = 'degrees')
-# convert from degrees to meters rise per meter displacement
-slope <- tan(slope * pi/180)
 catchmentAreas <- raster(file.path(shareDir, "kamp_catchment_area.tif"))
 
 
@@ -130,7 +122,6 @@ plot(log(caDF$area), log(val), xlab="log(Catchment Area)", ylab="log(discharge)"
 points(log(qSites$A), log(qSites$Q), pch=16, cex=0.7, col='blue')
 
 
-slope <- crop(slope, q)
 dat = data.table(x = coordinates(q)[,1], y = coordinates(q)[,2], q = values(q))
 dat = dat[complete.cases(dat)]
 geom <- hydraulic_geometry(dat$q)
@@ -138,8 +129,6 @@ coordinates(geom) <- dat[,c('x', 'y')]
 gridded(geom) <- TRUE
 geom <- stack(geom)
 proj4string(geom) <- proj4string(catchmentAreas)
-geom <- stack(geom, slope)
-names(geom)[nlayers(geom)] <- "slope"
 
 gdir = file.path(shareDir, "geometry_KampFall2019")
 dir.create(gdir, showWarnings = FALSE)
@@ -164,6 +153,7 @@ compareRaster(stream, drain, elev, accum, catchmentAreas, geom)
 kampWS = Watershed(stream = stream, drainage = drain, elevation = elev, 
 		accumulation = accum, catchmentArea = catchmentAreas, 
 		otherLayers = geom)
+kampWS$data$slope = wsSlope(kampWS)
 saveRDS(kampWS, file.path(shareDir, "watershed_KampFall2019.rds"))
 
 

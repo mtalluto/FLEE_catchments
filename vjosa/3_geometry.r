@@ -14,9 +14,6 @@ drain <- raster(file.path(shareDir, "drainage.tif"))
 accum <- raster(file.path(shareDir, "accumulation.tif"))
 elev <- raster(file.path(shareDir, "filled_dem.tif"))
 vjosaChannel <- raster(file.path(shareDir, "vjosa_stream.tif"))
-slope <- terrain(elev, unit = 'degrees')
-# convert from degrees to meters rise per meter displacement
-slope <- tan(slope * pi/180)
 catchmentAreas <- raster(file.path(shareDir, "catchment_area.tif"))
 
 
@@ -26,16 +23,14 @@ qry <- "SELECT sites.siteName, (expeditions.watershed || expeditions.season || e
 	LEFT JOIN sites ON siteID = sites.id 
 	LEFT JOIN variableLookUp ON variableCode = variableLookUp.id 
 	LEFT JOIN expeditions on expeditionID = expeditions.id 
-	WHERE variableLookUp.variable LIKE 'Q'"
+	WHERE variableLookUp.variable LIKE 'Q' AND expedition LIKE 'Vjosa%'"
 qSites <- data.table(dbGetQuery(metabDB, qry))
 coordinates(qSites) <- c('x', 'y')
 proj4string(qSites) <- CRS(paste0("+init=epsg:", qSites$epsg[1]))
-qSites <- spTransform(qSites, proj4string(catchmentAreas))
-qSites <- snapToStream(qSites, vjosaChannel, 500)
 qSites$catchmentArea <- raster::extract(catchmentAreas, qSites)
 qSites <- as.data.table(qSites)
 qSites <- qSites[, .(siteName = siteName, expedition = expedition, Q = discharge, 
-	A = catchmentArea, x = X1, y = X2)]
+	A = catchmentArea, x, y)]
 
 caDF <- cbind(values(catchmentAreas), coordinates(catchmentAreas))
 caDF <- caDF[complete.cases(caDF),]
@@ -62,7 +57,6 @@ lapply(names(qByExpedition), function(x) {
 	points(log(dat$A), log(dat$Q), pch=16, cex=0.7, col='blue')
 })
 
-slope <- crop(slope, qByExpedition[[1]])
 geom <- lapply(qByExpedition, function(x) {
 	df <- data.frame(x = coordinates(x)[,1], y = coordinates(x)[,2], q = values(x))
 	df <- df[complete.cases(df),]
@@ -71,8 +65,6 @@ geom <- lapply(qByExpedition, function(x) {
 	gridded(geom) <- TRUE
 	geom <- stack(geom)
 	proj4string(geom) <- proj4string(catchmentAreas)
-	geom <- stack(geom, slope)
-	names(geom)[nlayers(geom)] <- "slope"
 	geom
 })
 
@@ -92,10 +84,17 @@ for(x in nms) {
 
 vjosaWS <- list()
 for(x in nms) {
-	geom <- stack(list.files(paste0(dir, "/geometry_", x), pattern="*.tif", full.names = TRUE))
+	geom <- stack(list.files(paste0(shareDir, "/geometry_", x), pattern="*.tif", 
+		full.names = TRUE))
 	vjosaWS[[x]] <- Watershed(stream = vjosaChannel, drainage = drain, elevation = elev, 
 		accumulation = accum, catchmentArea = catchmentAreas, 
 		otherLayers = geom)
+}
+
+## get slope and add to all watersheds
+slope = wsSlope(vjosaWS[[1]])
+for(x in nms) {
+	vjosaWS[[x]]$data$slope = slope
 	saveRDS(vjosaWS[[x]], paste0(shareDir, "/watershed_", x, ".rds"))
 }
 
